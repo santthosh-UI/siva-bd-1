@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#fbf7f0">
+<title>A Little Birthday Surprise</title>
+<style>
+:root{--paper:#fbf7f0;--ink:#55483f;--muted:#88796e;--rose:#d88c91;--leaf:#6e9272;--gold:#c5a36b}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--paper);color:var(--ink);font-family:Georgia,"Times New Roman",serif}
+body{overflow-x:hidden}
+button,input{font:inherit}
+button{cursor:pointer}
+.screen{min-height:100svh;display:none;position:relative;overflow:hidden;padding:clamp(22px,5vw,54px);align-items:center;justify-content:center;text-align:center}
+.screen.active{display:flex}
+.inner{width:min(760px,100%);margin:auto}
+.kicker{font:600 11px/1.4 system-ui,sans-serif;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
+h1{font-size:clamp(30px,6vw,54px);font-weight:400;line-height:1.12;margin:12px 0 18px}
+p{font-size:clamp(17px,2.6vw,21px);line-height:1.65}
+.small{font:13px/1.5 system-ui,sans-serif;color:var(--muted)}
+.primary,.choice{border:1px solid #cdb9a8;background:#fffaf4;color:#655247;border-radius:999px;padding:13px 25px;min-width:118px;transition:.2s}
+.primary:hover,.choice:hover{transform:translateY(-2px);background:#f4e9df}
+.choice-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+.audio-card{margin:24px auto 0;padding:18px;border:1px solid #e7dcd0;border-radius:22px;background:#fffdf9;max-width:340px}
+.voice-note{width:min(92vw,560px);margin:30px auto 0;padding:13px 17px;display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#f0e8ff 0%,#fce8f2 100%);border:1px solid #eadcf7;border-radius:23px 23px 23px 7px;color:#45345e;box-shadow:0 9px 28px #76529a18}
+.voice-avatar{flex:0 0 36px;width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid #fff;box-shadow:0 2px 8px #5e397b25}
+.voice-play{flex:0 0 37px;width:37px;height:37px;border:0;border-radius:50%;background:linear-gradient(135deg,#833ab4 0%,#c13584 55%,#f77737 100%);color:#fff;font:19px/1 system-ui,sans-serif;padding:0 0 1px 2px;display:grid;place-items:center;box-shadow:0 3px 9px #a3429b40}
+.voice-wave{height:53px;flex:1;display:flex;align-items:center;justify-content:space-between;gap:4px;min-width:0}
+.voice-wave i{display:block;width:4px;max-width:5px;border-radius:8px;background:linear-gradient(180deg,#8e44ad,#c13584 65%,#e66b8a);opacity:.9}
+.voice-duration{font:13px system-ui,sans-serif;color:#705d80;white-space:nowrap;font-variant-numeric:tabular-nums}
+.voice-note.playing .voice-wave i{animation:wavePulse .55s ease-in-out infinite alternate}
+.voice-note.playing .voice-wave i:nth-child(3n){animation-delay:.18s}
+.voice-note.playing .voice-wave i:nth-child(3n+1){animation-delay:.32s}
+@keyframes wavePulse{to{transform:scaleY(.55);opacity:.55}}
+@media(max-width:420px){.voice-note{padding:11px 12px;gap:9px;border-radius:20px 20px 20px 6px}.voice-avatar{width:31px;height:31px;flex-basis:31px}.voice-play{width:34px;height:34px;flex-basis:34px}.voice-wave{gap:3px;height:48px}.voice-wave i{width:3px}.voice-duration{font-size:12px}}
+
+.play{width:58px;height:58px;border:0;border-radius:50%;background:#d9b9ad;color:white;font:24px system-ui}
+.photo{display:block;width:min(78vw,390px);max-height:48svh;object-fit:contain;margin:22px auto;border-radius:18px;box-shadow:0 16px 45px #6c55421c}
+.record-wrap{width:min(66vw,300px);aspect-ratio:1;margin:20px auto;display:grid;place-items:center}
+.record-photo{width:100%;height:100%;object-fit:cover;border-radius:50%;border:10px solid #282421;box-shadow:0 12px 35px #4b382b38;animation:spin 7s linear infinite;animation-play-state:paused}
+.record-photo.spinning{animation-play-state:running}
+@keyframes spin{to{transform:rotate(360deg)}}
+#bouquetScreen{padding:0;display:none;touch-action:manipulation;cursor:pointer;min-height:100svh}
+#bouquetScreen.active{display:flex}
+.bouquet-stage{position:relative;width:100%;min-height:100svh;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.bouquet-note{position:absolute;inset:0;pointer-events:none}
+.flower{position:absolute;left:50%;top:52%;width:var(--size);height:var(--size);transform:translate(-50%,-50%) scale(.05) rotate(var(--rot));opacity:0;transition:transform .75s cubic-bezier(.2,.8,.2,1),opacity .5s}
+.flower.bloom{opacity:1;transform:translate(calc(-50% + var(--x)),calc(-50% + var(--y))) scale(1) rotate(var(--rot))}
+.flower svg{width:100%;height:100%;overflow:visible;filter:drop-shadow(0 3px 3px #78624a20)}
+.stem{position:absolute;width:2px;height:clamp(90px,18vh,150px);background:linear-gradient(#71916c,#a4ad7b);left:50%;top:62%;transform-origin:top;opacity:0;transition:opacity .5s}
+.stem.show{opacity:1}
+.bouquet-wrap{position:absolute;bottom:4vh;width:min(75vw,380px);height:25vh;pointer-events:none}
+.bouquet-wrap:before{content:"";position:absolute;bottom:0;left:18%;width:64%;height:68%;background:linear-gradient(135deg,#d8bca5,#f1ded0 50%,#caa68e);clip-path:polygon(5% 0,95% 0,72% 100%,28% 100%);border-radius:8px 8px 24px 24px;opacity:.8}
+.bouquet-wrap:after{content:"";position:absolute;bottom:0;left:10%;width:80%;height:8px;border-radius:50%;background:#b9957c}
+#portraitScreen{background:#f9f2e9}
+.petal{position:fixed;top:-8vh;width:13px;height:19px;border-radius:80% 0 80% 0;background:#e9aeb4;opacity:.85;z-index:5;pointer-events:none;animation:fall linear forwards}
+@keyframes fall{to{transform:translate3d(var(--drift),110vh,0) rotate(760deg);opacity:.15}}
+#timeInput{width:min(280px,80vw);padding:17px;border:1px solid #d9c8b8;border-radius:14px;background:#fffdf9;text-align:center;font:24px system-ui,sans-serif;color:var(--ink);margin:18px auto}
+#ageGrid{display:grid;grid-template-columns:repeat(2,minmax(110px,1fr));gap:10px;margin:28px auto;max-width:540px}
+.age-unit{padding:17px 8px;border:1px solid #e6d9cd;border-radius:17px;background:#fffdf9}
+.age-value{font:clamp(24px,5vw,36px)/1.1 system-ui,sans-serif;color:#8d6f63;font-variant-numeric:tabular-nums}
+.age-label{font:11px system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:7px}
+.butterfly{position:fixed;z-index:3;font-size:30px;pointer-events:none;animation:fly 12s linear infinite}
+@keyframes fly{0%{transform:translate(-10vw,85vh) rotate(-12deg)}50%{transform:translate(50vw,15vh) rotate(12deg)}100%{transform:translate(110vw,65vh) rotate(-8deg)}}
+.message{max-width:700px;margin:auto}
+.message p{margin:14px 0}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+#holdScreen .hold-button{min-width:220px;padding:18px 30px;font:600 16px system-ui,sans-serif;letter-spacing:.02em;touch-action:none;user-select:none;-webkit-user-select:none}
+#holdScreen .hold-button.holding{transform:scale(.96);background:#f0dfd5;box-shadow:0 0 0 8px #d9b9ad35}
+#blankScreen{background:#fbf7f0;cursor:pointer;touch-action:manipulation}
+#bouquetScreen{background:#fff8f2;cursor:pointer}
+#bouquetScreen .bouquet-stage{min-height:100svh;width:100%;position:relative;display:grid;place-items:center}
+#bouquetImage{width:min(100vw,520px);height:min(92svh,900px);object-fit:contain;opacity:0;transform:scale(.86);transition:opacity 1.1s ease,transform 1.1s cubic-bezier(.2,.8,.2,1);pointer-events:none}
+#bouquetImage.revealed{opacity:1;transform:scale(1)}
+#bouquetScreen .bouquet-note{position:absolute;inset:0;pointer-events:none}
+#bouquetScreen .flower{z-index:2}
+#birthdayReveal{background:#fff8f2}
+.birthday-pop{font-size:clamp(38px,9vw,76px);line-height:1.1;color:#9a6170;opacity:0;transform:scale(.15) rotate(-12deg);font-weight:700;text-shadow:0 5px 0 #f2d8d6,0 12px 30px #b77b8c35}
+.birthday-pop.pop-in{animation:birthdayPop 1.15s cubic-bezier(.17,.89,.32,1.49) forwards}
+@keyframes birthdayPop{0%{opacity:0;transform:scale(.15) rotate(-12deg)}65%{opacity:1;transform:scale(1.16) rotate(4deg)}82%{transform:scale(.94) rotate(-2deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
+.confetti-layer{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.confetti-bit{position:absolute;top:-12px;width:9px;height:15px;border-radius:2px;animation:confettiDrop 2.8s ease-in forwards}
+@keyframes confettiDrop{to{transform:translate3d(var(--dx),110vh,0) rotate(780deg);opacity:.1}}
+#finaleScreen{background:#fbf7f0;overflow:hidden}
+.finale-title{font-size:clamp(42px,12vw,84px);color:#a77b88}
+.finale-subtitle{font:600 11px system-ui,sans-serif;letter-spacing:.22em;text-transform:uppercase;color:#88796e;margin-top:12px}
+.music-notes{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.music-note{position:absolute;bottom:-12vh;font-size:clamp(24px,5vw,42px);animation:noteFloat var(--dur) linear forwards;opacity:0}
+@keyframes noteFloat{0%{transform:translate3d(0,0,0) rotate(-12deg) scale(.7);opacity:0}12%{opacity:.85}85%{opacity:.75}100%{transform:translate3d(var(--dx),-115vh,0) rotate(24deg) scale(1.15);opacity:0}}
+
+</style>
+</head>
+<body>
+<main>
+<section id="opening" class="screen active"><div class="inner">
+  <div class="kicker">A little birthday surprise</div>
+  <div class="voice-note">
+    <img class="voice-avatar" src="assets/portrait.jpg" alt="">
+    <button class="voice-play" id="playFirst" aria-label="Play voice message">▶</button>
+    <div class="voice-wave" aria-hidden="true"><i style="height:13px"></i><i style="height:27px"></i><i style="height:39px"></i><i style="height:51px"></i><i style="height:44px"></i><i style="height:60px"></i><i style="height:73px"></i><i style="height:48px"></i><i style="height:56px"></i><i style="height:39px"></i><i style="height:67px"></i><i style="height:53px"></i><i style="height:76px"></i><i style="height:45px"></i><i style="height:61px"></i><i style="height:35px"></i><i style="height:54px"></i><i style="height:70px"></i><i style="height:42px"></i><i style="height:58px"></i><i style="height:31px"></i><i style="height:47px"></i><i style="height:63px"></i><i style="height:38px"></i><i style="height:55px"></i><i style="height:72px"></i><i style="height:43px"></i><i style="height:59px"></i><i style="height:34px"></i></div>
+    <span class="voice-duration">0:16</span>
+  </div>
+</div></section>
+
+<section id="song" class="screen"><div class="inner">
+  <h1>this song right?</h1>
+  <div class="record-wrap"><img id="songPhoto" class="record-photo" src="assets/song-photo.jpg" alt="Photograph"></div>
+</div></section>
+
+<section id="choice" class="screen"><div class="inner">
+  <h1>Well?</h1><div class="choice-row"><button class="choice" id="yes">YES</button><button class="choice" id="no">NO</button></div>
+  <p id="noReply" aria-live="polite" hidden>😭 I already made it.</p>
+</div></section>
+
+<section id="secondVoice" class="screen"><div class="inner">
+  <div class="voice-note">
+    <img class="voice-avatar" src="assets/portrait.jpg" alt="">
+    <button class="voice-play" id="playSecond" aria-label="Play second voice message">▶</button>
+    <div class="voice-wave" aria-hidden="true"><i style="height:13px"></i><i style="height:27px"></i><i style="height:39px"></i><i style="height:51px"></i><i style="height:44px"></i><i style="height:60px"></i><i style="height:73px"></i><i style="height:48px"></i><i style="height:56px"></i><i style="height:39px"></i><i style="height:67px"></i><i style="height:53px"></i><i style="height:76px"></i><i style="height:45px"></i><i style="height:61px"></i><i style="height:35px"></i><i style="height:54px"></i><i style="height:70px"></i><i style="height:42px"></i><i style="height:58px"></i><i style="height:31px"></i><i style="height:47px"></i><i style="height:63px"></i><i style="height:38px"></i><i style="height:55px"></i><i style="height:72px"></i><i style="height:43px"></i><i style="height:59px"></i><i style="height:34px"></i></div>
+    <span class="voice-duration">0:10</span>
+  </div>
+</div></section>
+
+<section id="violin" class="screen"><div class="inner">
+  <h1>this 🎻 part ?</h1><img class="photo" src="assets/violin-photo.jpg" alt="Photograph for the violin part">
+</div></section>
+<section id="wait" class="screen"><div class="inner"><h1>oh wait</h1></div></section>
+<section id="version" class="screen"><div class="inner"><h1>how is this version</h1></div></section>
+<section id="forgot" class="screen"><div class="inner"><h1>I forget about this</h1></div></section>
+
+<section id="holdScreen" class="screen"><div class="inner">
+  <button class="primary hold-button" id="holdButton">Press here and hold</button>
+</div></section>
+
+<section id="blankScreen" class="screen" aria-label="Blank reveal screen"></section>
+
+<section id="bouquetScreen" class="screen" aria-label="A bouquet that blooms with each click">
+ <div class="bouquet-stage" id="bouquetStage">
+   <img id="bouquetImage" src="assets/bouquet.jpg" alt="A wrapped bouquet of roses, tulips and small blossoms">
+   <div class="bouquet-note" id="flowerLayer"></div>
+ </div>
+</section>
+
+<section id="birthdayReveal" class="screen"><div class="inner">
+  <div class="birthday-pop" id="birthdayPop">Happy Birthday! 🎉</div>
+  <div class="confetti-layer" id="confettiLayer" aria-hidden="true"></div>
+</div></section>
+
+<section id="portraitScreen" class="screen"><div class="inner">
+  <img class="photo" src="assets/portrait.jpg" alt="Birthday portrait">
+</div></section>
+
+<section id="birthTimeScreen" class="screen"><div class="inner">
+  <div class="kicker">One little thing</div><h1>Enter your birth time to unlock the next page 🦋</h1>
+  <form id="birthForm"><input id="timeInput" type="time" required aria-label="Birth time"><br><button class="primary" type="submit">Continue →</button></form>
+  <div id="timeError" class="small" role="status"></div>
+</div></section>
+
+<section id="ageScreen" class="screen"><div class="inner">
+  <div class="kicker">Every second is part of your story</div><h1>Your journey so far 🦋</h1>
+  <div id="ageGrid">
+    <div class="age-unit"><div class="age-value" id="years">—</div><div class="age-label">Years</div></div>
+    <div class="age-unit"><div class="age-value" id="months">—</div><div class="age-label">Months</div></div>
+    <div class="age-unit"><div class="age-value" id="weeks">—</div><div class="age-label">Weeks</div></div>
+    <div class="age-unit"><div class="age-value" id="days">—</div><div class="age-label">Days</div></div>
+    <div class="age-unit"><div class="age-value" id="hours">—</div><div class="age-label">Hours</div></div>
+    <div class="age-unit"><div class="age-value" id="minutes">—</div><div class="age-label">Minutes</div></div>
+    <div class="age-unit"><div class="age-value" id="seconds">—</div><div class="age-label">Seconds</div></div>
+  </div>
+  <button class="primary" id="ageContinue" hidden>Continue →</button>
+</div></section>
+
+<section id="messageScreen" class="screen"><div class="inner message">
+  <h1>Happy Birthday! 🎂🦋</h1>
+  <p>Another year, another chapter, and countless little moments waiting to become beautiful memories.</p>
+  <p>I hope this year brings you happiness in unexpected places, courage for new adventures, peace on difficult days, and plenty of reasons to smile.</p>
+  <p>Keep being yourself, keep discovering new things, and never stop enjoying the little wonders of life.</p>
+  <p>Wishing you a wonderful year ahead, filled with laughter, good health, lovely surprises and unforgettable memories.</p>
+  <p><strong>Have the best birthday! 🌷</strong></p>
+  <button class="primary" id="closeMessage">Close message</button>
+</div></section>
+
+<section id="finaleScreen" class="screen"><div class="inner finale-inner">
+  <div class="finale-title">🎶</div>
+  <div class="finale-subtitle">Enjoy the music</div>
+  <div class="music-notes" id="musicNotes" aria-hidden="true"></div>
+</div></section>
+</main>
+
+<audio id="track" src="assets/birthday-audio.mp3" preload="auto"></audio>
+<iframe name="quietFormFrame" title=" " style="display:none" aria-hidden="true"></iframe>
+
+<script>
+(() => {
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const audio = $("track");
+  const ids = ["opening","song","choice","secondVoice","violin","wait","version","forgot","holdScreen","blankScreen","bouquetScreen","birthdayReveal","portraitScreen","birthTimeScreen","ageScreen","messageScreen","finaleScreen"];
+  let page="opening", stage="first-ready", bouquetClicks=0, ageStart=null, ageInterval=null;
+  let petalInterval=null, confettiInterval=null, noteInterval=null, holdTimer=null, holdDone=false, flowerHandler=null;
+
+  function show(id){ids.forEach(x=>$(x).classList.toggle("active",x===id));page=id;}
+  function player(buttonId, playing){
+    const button=$(buttonId), card=button.closest(".voice-note");
+    card.classList.toggle("playing",playing);
+    button.textContent=playing?"Ⅱ":"▶";
+  }
+  function playFrom(t, buttonId){
+    audio.pause();
+    const start=()=>{
+      audio.currentTime=t;
+      if(buttonId)player(buttonId,true);
+      const p=audio.play();
+      if(p&&p.catch)p.catch(()=>{if(buttonId)player(buttonId,false);});
+    };
+    if(audio.readyState>=1)start();else audio.addEventListener("loadedmetadata",start,{once:true});
+  }
+  function stopAt(t, callback, buttonId){
+    const check=()=>{
+      if(audio.currentTime>=t){
+        audio.pause();
+        if(buttonId)player(buttonId,false);
+        audio.removeEventListener("timeupdate",check);
+        callback();
+      }
+    };
+    audio.addEventListener("timeupdate",check);
+    check();
+  }
+
+  // First voice note, then the song/photo, then the YES/NO choice.
+  $("playFirst").addEventListener("click",()=>{
+    if(stage!=="first-ready")return;
+    stage="first-playing";
+    $("playFirst").disabled=true;
+    playFrom(0,"playFirst");
+    stopAt(16,()=>{
+      show("song");$("songPhoto").classList.add("spinning");stage="song-playing";
+      playFrom(16,"playFirst");
+      stopAt(22,()=>{
+        $("songPhoto").classList.remove("spinning");
+        player("playFirst",false);show("choice");stage="choice";
+      },"playFirst");
+    },"playFirst");
+  });
+
+  function secondReady(){stage="second-ready";show("secondVoice");}
+  $("yes").addEventListener("click",()=>{if(stage==="choice")secondReady();});
+  $("no").addEventListener("click",()=>{
+    if(stage!=="choice")return;
+    $("noReply").hidden=false;$("yes").disabled=true;$("no").disabled=true;
+    setTimeout(secondReady,1300);
+  });
+
+  // Second voice note and remaining timed visual captions.
+  $("playSecond").addEventListener("click",()=>{
+    if(stage!=="second-ready")return;
+    stage="second-playing";$("playSecond").disabled=true;
+    playFrom(25,"playSecond");
+    stopAt(35,()=>{
+      player("playSecond",false);show("violin");stage="later";
+      playFrom(35,"playSecond");
+    },"playSecond");
+  });
+  audio.addEventListener("timeupdate",()=>{
+    if(stage!=="later")return;
+    const t=audio.currentTime;
+    if(t>=50&&t<53)show("wait");
+    else if(t>=53&&t<55)show("version");
+    else if(t>=55&&t<60)show("forgot");
+    else if(t>=60){
+      audio.pause();player("playSecond",false);
+      show("holdScreen");stage="hold";
+    }
+  });
+
+  // Hold button must be held, not merely tapped.
+  const hold=$("holdButton");
+  function startHold(e){
+    if(stage!=="hold"||holdDone)return;
+    e.preventDefault();hold.classList.add("holding");
+    holdTimer=setTimeout(()=>{
+      holdDone=true;hold.classList.remove("holding");
+      show("blankScreen");stage="blank";
+    },1200);
+  }
+  function cancelHold(){
+    if(holdTimer)clearTimeout(holdTimer);
+    holdTimer=null;hold.classList.remove("holding");
+  }
+  hold.addEventListener("pointerdown",startHold);
+  ["pointerup","pointercancel","pointerleave"].forEach(ev=>hold.addEventListener(ev,cancelHold));
+  hold.addEventListener("contextmenu",e=>e.preventDefault());
+
+  // A completely blank page; her first tap starts the bouquet.
+  $("blankScreen").addEventListener("click",()=>{
+    if(stage!=="blank")return;
+    show("bouquetScreen");stage="bouquet";startBouquet();
+  });
+
+  // 25 taps bloom 25 flowers, then the complete wrapped bouquet reference appears.
+  const palette=[
+    ["#e85d83","#ffe0e8","#b93c68"],["#f0a4b8","#fff0f3","#cf718e"],
+    ["#f4c1d1","#fff8fa","#d68aa3"],["#e6b4c6","#fff0f5","#b96d8c"],
+    ["#f1a9a1","#fff1e8","#c87972"],["#f4d7a4","#fff5dc","#c5a36b"],
+    ["#fff4f0","#fffaf5","#c9a4a2"]
+  ];
+  function flowerSvg(c,kind){
+    if(kind==="tulip")return `<svg viewBox="0 0 100 120" aria-hidden="true"><path d="M50 105 Q48 80 50 48" stroke="#638b68" stroke-width="5" fill="none"/><path d="M49 82 Q20 68 22 97 Q38 105 49 91" fill="#779b76"/><path d="M50 82 Q79 64 81 94 Q64 105 50 91" fill="#6e916d"/><path d="M25 48 Q18 8 40 22 Q50 -2 60 22 Q83 8 75 48 Q65 75 50 74 Q35 75 25 48" fill="${c[0]}" stroke="${c[2]}" stroke-width="3"/></svg>`;
+    let petals="";
+    for(let i=0;i<8;i++)petals+=`<ellipse cx="50" cy="25" rx="13" ry="24" fill="${c[0]}" stroke="${c[2]}" stroke-width="1.5" transform="rotate(${i*45} 50 50)"/>`;
+    return `<svg viewBox="0 0 100 100" aria-hidden="true">${petals}<circle cx="50" cy="50" r="14" fill="${c[1]}" stroke="${c[2]}" stroke-width="2"/><circle cx="50" cy="50" r="5" fill="${c[2]}"/></svg>`;
+  }
+  function startBouquet(){
+    bouquetClicks=0;$("flowerLayer").innerHTML="";$("bouquetImage").classList.remove("revealed");
+    if(flowerHandler)$("bouquetScreen").removeEventListener("click",flowerHandler);
+    flowerHandler=()=>{
+      if(page!=="bouquetScreen"||bouquetClicks>=25)return;
+      const i=bouquetClicks++,angle=(-145+(i%9)*36)*Math.PI/180,ring=Math.floor(i/9);
+      const radius=ring===0?0:ring===1?76:128;
+      const x=ring===0?(i%2?26:-26):Math.cos(angle)*radius;
+      const y=ring===0?-72:Math.sin(angle)*radius-62;
+      const el=document.createElement("div");el.className="flower";
+      const kind=(i%5===1||i%5===4)?"tulip":"rose";
+      el.style.setProperty("--x",x+"px");el.style.setProperty("--y",y+"px");
+      el.style.setProperty("--size",(kind==="tulip"?68:61)+"px");el.style.setProperty("--rot",(i*17%360)+"deg");
+      el.innerHTML=flowerSvg(palette[i%palette.length],kind);
+      $("flowerLayer").appendChild(el);requestAnimationFrame(()=>el.classList.add("bloom"));
+      if(bouquetClicks===25){
+        setTimeout(()=>{
+          $("bouquetImage").classList.add("revealed");
+          setTimeout(showBirthdayReveal,1900);
+        },650);
+      }
+    };
+    $("bouquetScreen").addEventListener("click",flowerHandler);
+  }
+
+  function showBirthdayReveal(){
+    show("birthdayReveal");stage="birthday-reveal";
+    $("birthdayPop").classList.remove("pop-in");void $("birthdayPop").offsetWidth;$("birthdayPop").classList.add("pop-in");
+    confettiInterval=setInterval(()=>{
+      for(let i=0;i<12;i++){
+        const bit=document.createElement("i");bit.className="confetti-bit";
+        bit.style.left=Math.random()*100+"%";
+        bit.style.setProperty("--dx",(Math.random()*240-120)+"px");
+        bit.style.background=["#e78ca1","#d9b6d4","#e9c77b","#a9c9ad","#f3b5a5"][Math.floor(Math.random()*5)];
+        bit.style.animationDuration=(2+Math.random()*1.4)+"s";
+        $("confettiLayer").appendChild(bit);setTimeout(()=>bit.remove(),4000);
+      }
+    },250);
+    setTimeout(()=>{
+      clearInterval(confettiInterval);
+      show("portraitScreen");startPetalShower();
+    },3100);
+  }
+
+  function startPetalShower(){
+    petalInterval=setInterval(()=>{
+      for(let j=0;j<5;j++){
+        const el=document.createElement("i");el.className="petal";
+        el.style.left=Math.random()*100+"vw";
+        el.style.setProperty("--drift",(Math.random()*180-90)+"px");
+        el.style.animationDuration=(5+Math.random()*5)+"s";
+        el.style.background=["#e9aeb4","#f2d2a6","#d9b8d9","#f7e5e2"][Math.floor(Math.random()*4)];
+        document.body.appendChild(el);setTimeout(()=>el.remove(),11000);
+      }
+    },400);
+    setTimeout(()=>{clearInterval(petalInterval);show("birthTimeScreen");stage="birth-time";},6500);
+  }
+
+  // Birth time is submitted quietly to the supplied Google Form.
+  $("birthForm").addEventListener("submit",e=>{
+    e.preventDefault();const value=$("timeInput").value;if(!value)return;
+    const form=document.createElement("form");form.method="POST";
+    form.action="https://docs.google.com/forms/d/e/1FAIpQLSfQiM4A6-VwtDmkOFxpg6UQL3UNwd-BAZdhrwT9OCJqwCaGrw/formResponse";
+    form.target="quietFormFrame";
+    const input=document.createElement("input");input.type="hidden";input.name="entry.1822974272";input.value=value;
+    form.appendChild(input);document.body.appendChild(form);form.submit();form.remove();
+    const [h,m]=value.split(":").map(Number);
+    ageStart=new Date(Date.UTC(2001,10,7,h,m)-330*60000);
+    show("ageScreen");stage="age";startButterflies();updateAge();
+    if(ageInterval)clearInterval(ageInterval);ageInterval=setInterval(updateAge,1000);
+    // The age display is intentionally brief: exactly five seconds before the wishes.
+    setTimeout(()=>{if(page==="ageScreen"){clearInterval(ageInterval);show("messageScreen");stage="message";}},5000);
+  });
+
+  function updateAge(){
+    if(!ageStart)return;
+    const now=new Date(),elapsed=Math.max(0,now-ageStart);
+    let years=now.getUTCFullYear()-ageStart.getUTCFullYear();
+    const anniversary=new Date(Date.UTC(ageStart.getUTCFullYear()+years,ageStart.getUTCMonth(),ageStart.getUTCDate(),ageStart.getUTCHours(),ageStart.getUTCMinutes()));
+    if(now<anniversary)years--;
+    const set=(id,v)=>$(id).textContent=Math.floor(v).toLocaleString("en-US");
+    set("years",years);
+    set("months",Math.max(0,(now.getUTCFullYear()-2001)*12+now.getUTCMonth()-10-(now.getUTCDate()<7?1:0)));
+    set("weeks",elapsed/604800000);set("days",elapsed/86400000);set("hours",elapsed/3600000);
+    set("minutes",elapsed/60000);set("seconds",elapsed/1000);
+  }
+  function startButterflies(){
+    document.querySelectorAll(".butterfly").forEach(x=>x.remove());
+    for(let i=0;i<5;i++){
+      const el=document.createElement("div");el.className="butterfly";el.textContent="🦋";
+      el.style.animationDelay=(-i*2.4)+"s";el.style.top=(i*13+5)+"%";document.body.appendChild(el);
+    }
+  }
+
+  $("closeMessage").addEventListener("click",()=>{
+    show("finaleScreen");stage="finale";
+    document.querySelectorAll(".butterfly").forEach(x=>x.remove());
+    // Resume the instrumental/final music section from the one-minute mark.
+    playFrom(60,null);
+    startMusicNotes();
+  });
+  function startMusicNotes(){
+    const container=$("musicNotes");
+    noteInterval=setInterval(()=>{
+      const el=document.createElement("span");el.className="music-note";
+      el.textContent=Math.random()>.5?"🎵":"🎶";
+      el.style.left=Math.random()*95+"%";
+      el.style.setProperty("--dx",(Math.random()*160-80)+"px");
+      el.style.setProperty("--dur",(7+Math.random()*5)+"s");
+      container.appendChild(el);setTimeout(()=>el.remove(),13000);
+    },550);
+  }
+  audio.addEventListener("ended",()=>{
+    if(page==="finaleScreen"){
+      if(noteInterval)clearInterval(noteInterval);
+      stage="finished";
+    }
+  });
+})();
+</script>
+</body>
+</html>
